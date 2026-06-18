@@ -393,6 +393,11 @@ fun WeatherDashboardContent(
             }
         }
 
+        // Dedicated severe weather keywords monitoring card
+        item {
+            SevereKeywordsAlertCard(state = state)
+        }
+
         // Programmatic & AI Severe Alert Section
         val hasSevereAlerts = state.localAlerts.isNotEmpty() ||
                               (!state.aiAnalysis.severeConditionsAlert.isNullOrBlank() &&
@@ -1033,4 +1038,143 @@ fun DailyForecastRow(item: DailyForecastItem) {
         }
     }
 }
+
+@Composable
+fun SevereKeywordsAlertCard(state: WeatherUiState.Success) {
+    val keywords = listOf(
+        "storm", "thunderstorm", "hurricane", "tornado", "gale", "blizzard", "cyclone", "typhoon",
+        "flood", "flooding", "hail", "lightning", "extreme", "severe", "freeze", "freezing", "frost", "blustery", "gale-force"
+    )
+    
+    val textToScan = buildString {
+        append(WeatherRepository.getWmoDescription(state.current.weatherCode)).append(" ")
+        append(state.aiAnalysis.generalDescription).append(" ")
+        append(state.aiAnalysis.severeConditionsAlert ?: "").append(" ")
+        state.hourlyList.forEach {
+            append(WeatherRepository.getWmoDescription(it.weatherCode)).append(" ")
+        }
+        state.dailyList.forEach {
+            append(WeatherRepository.getWmoDescription(it.weatherCode)).append(" ")
+        }
+        state.localAlerts.forEach { alert ->
+            append(alert.title).append(" ").append(alert.description).append(" ")
+        }
+    }.lowercase()
+
+    val matchedKeywords = keywords.filter { keyword ->
+        textToScan.contains(keyword)
+    }.distinct()
+
+    if (matchedKeywords.isNotEmpty()) {
+        val warningMessage = when {
+            matchedKeywords.contains("hurricane") || matchedKeywords.contains("tornado") || matchedKeywords.contains("typhoon") || matchedKeywords.contains("cyclone") -> {
+                "Extreme Threat: High-speed rotation or life-threatening localized cyclonic winds detected. Seek storm shelter or interior room immediately."
+            }
+            matchedKeywords.contains("storm") || matchedKeywords.contains("thunderstorm") || matchedKeywords.contains("lightning") -> {
+                "Severe Thunderstorm Warning: Severe electrical activity, high winds, or heavy convection detected. Stay indoors and unplug delicate electronic equipment."
+            }
+            matchedKeywords.contains("flood") || matchedKeywords.contains("flooding") -> {
+                "Flash Flood Hazard: High-volume precipitation or drainage saturated. Never drive through flooded streets or underpasses."
+            }
+            matchedKeywords.contains("blizzard") || matchedKeywords.contains("freeze") || matchedKeywords.contains("freezing") || matchedKeywords.contains("frost") -> {
+                "Freezing Warning: Extremely low or sub-zero temperatures detected. Protect exposed plumbing, outdoor plants, and avoid slippery roads."
+            }
+            matchedKeywords.contains("gale") || matchedKeywords.contains("gale-force") || matchedKeywords.contains("blustery") -> {
+                "High Wind Advisory: Damaging winds can knock down tree limbs or power lines. Secure loose patio items and drive with caution."
+            }
+            else -> {
+                "Severe Weather Warning: Dangerous atmospheric fluctuations detected in local forecasts. Stay alert and monitor updates."
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp)
+                .testTag("severe_weather_keywords_alert_card"),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFFD32F2F) // Bold Crimson for warning
+            ),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Severe weather warning indicator",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "HIGH-PRIORITY WEATHER WARNING",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = warningMessage,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 20.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Displays matched severe weather keywords
+                Surface(
+                    color = Color.White.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "Detected Severe Keywords:",
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            matchedKeywords.forEach { kw ->
+                                Surface(
+                                    color = Color.White,
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier.padding(vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = kw.uppercase(),
+                                        color = Color(0xFFD32F2F),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
