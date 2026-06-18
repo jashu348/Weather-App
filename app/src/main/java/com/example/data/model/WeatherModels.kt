@@ -24,7 +24,8 @@ data class WeatherResponse(
     val longitude: Double,
     val timezone: String,
     val current: CurrentWeather? = null,
-    val hourly: HourlyWeather? = null
+    val hourly: HourlyWeather? = null,
+    val daily: DailyWeather? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -82,4 +83,21 @@ data class GeminiWeatherAnalysis(
     val severeConditionsSeverity: String?, // INFO, WARNING, SEVERE or NONE
     val clothingAdvice: String,
     val dynamicTip: String
+)
+
+@JsonClass(generateAdapter = true)
+data class DailyWeather(
+    val time: List<String>,
+    @Json(name = "weather_code") val weatherCode: List<Int>,
+    @Json(name = "temperature_2m_max") val temperatureMax: List<Double>,
+    @Json(name = "temperature_2m_min") val temperatureMin: List<Double>,
+    @Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int>
+)
+
+data class DailyForecastItem(
+    val date: String,
+    val weatherCode: Int,
+    val tempMax: Double,
+    val tempMin: Double,
+    val precipitationProbability: Int
 )

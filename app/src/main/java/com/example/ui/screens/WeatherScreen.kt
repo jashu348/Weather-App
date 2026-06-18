@@ -577,6 +577,11 @@ fun WeatherDashboardContent(
             }
         }
 
+        // Extended 7-Day Forecast Section
+        item {
+            DailyForecastSection(dailyList = state.dailyList)
+        }
+
         // Gemini Advisor
         item {
             Card(
@@ -895,3 +900,137 @@ fun HourlyCard(item: HourlyForecastItem) {
 
 private val Arrangement.some_unneeded_spacing_avoided: Arrangement.Vertical
     get() = Arrangement.spacedBy(12.dp)
+
+@Composable
+fun DailyForecastSection(dailyList: List<DailyForecastItem>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "EXTENDED 7-DAY FORECAST",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White.copy(alpha = 0.8f),
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("extended_forecast_card"),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.15f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            ) {
+                dailyList.forEachIndexed { index, dailyItem ->
+                    DailyForecastRow(item = dailyItem)
+                    if (index < dailyList.size - 1) {
+                        Divider(
+                            color = Color.White.copy(alpha = 0.1f),
+                            thickness = 1.dp,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyForecastRow(item: DailyForecastItem) {
+    val dayName = WeatherRepository.formatDateToDay(item.date)
+    val conditionDesc = WeatherRepository.getWmoDescription(item.weatherCode)
+    val emoji = when (item.weatherCode) {
+        0 -> "☀️"
+        1, 2 -> "🌤️"
+        3 -> "☁️"
+        45, 48 -> "🌫️"
+        51, 53, 55 -> "🌧️"
+        61, 63, 65 -> "🌧️"
+        71, 73, 75 -> "❄️"
+        80, 81, 82 -> "🌦️"
+        95, 96, 99 -> "⛈️"
+        else -> "🌡️"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .testTag("daily_forecast_row_${item.date}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Date / Day name (e.g. "Thursday, Jun 18")
+        Column(modifier = Modifier.weight(1.5f)) {
+            Text(
+                text = dayName,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = conditionDesc,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
+
+        // Precipitation Probability Indicator
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = emoji,
+                fontSize = 24.sp
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            if (item.precipitationProbability > 0) {
+                Text(
+                    text = "${item.precipitationProbability}%☔",
+                    fontSize = 11.sp,
+                    color = Color(0xFF64B5F6),
+                    fontWeight = FontWeight.Bold
+                )
+            } else {
+                Text(
+                    text = "0%☔",
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.4f)
+                )
+            }
+        }
+
+        // Hi/Lo Temp (e.g. "24° / 14°")
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${item.tempMax.toInt()}°",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = " / ",
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.4f)
+            )
+            Text(
+                text = "${item.tempMin.toInt()}°",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+

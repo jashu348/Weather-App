@@ -27,6 +27,7 @@ sealed interface WeatherUiState {
         val country: String?,
         val current: CurrentWeather,
         val hourlyList: List<HourlyForecastItem>,
+        val dailyList: List<DailyForecastItem>,
         val localAlerts: List<WeatherAlert>,
         val aiAnalysis: GeminiWeatherAnalysis,
         val latitude: Double,
@@ -134,6 +135,22 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                 // Subset hourly list to future 24 items
                 val upcomingHourly = getUpcoming24Hours(hourlyList)
 
+                // 2.5 Parse daily items
+                val dailyList = mutableListOf<DailyForecastItem>()
+                forecast.daily?.let { daily ->
+                    for (i in daily.time.indices) {
+                        dailyList.add(
+                            DailyForecastItem(
+                                date = daily.time[i],
+                                weatherCode = daily.weatherCode.getOrNull(i) ?: 0,
+                                tempMax = daily.temperatureMax.getOrNull(i) ?: 0.0,
+                                tempMin = daily.temperatureMin.getOrNull(i) ?: 0.0,
+                                precipitationProbability = daily.precipitationProbabilityMax.getOrNull(i) ?: 0
+                            )
+                        )
+                    }
+                }
+
                 // 3. Generate deterministic severe warnings programmatically
                 val localAlerts = repository.generateDeterministicAlerts(current)
 
@@ -152,6 +169,7 @@ class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() 
                     country = country,
                     current = current,
                     hourlyList = upcomingHourly,
+                    dailyList = dailyList,
                     localAlerts = localAlerts,
                     aiAnalysis = aiAnalysis,
                     latitude = lat,

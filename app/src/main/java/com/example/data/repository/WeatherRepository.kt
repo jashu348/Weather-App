@@ -230,5 +230,17 @@ class WeatherRepository(private val dao: SavedLocationDao) {
                 if (isoTime.contains("T")) isoTime.substringAfter("T") else isoTime
             }
         }
+
+        fun formatDateToDay(isoDate: String): String {
+            return try {
+                val cleanDate = if (isoDate.contains("T")) isoDate.substringBefore("T") else isoDate
+                val parser = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val formatter = SimpleDateFormat("EEEE, MMM d", Locale.US)
+                val date = parser.parse(cleanDate)
+                if (date != null) formatter.format(date) else isoDate
+            } catch (e: Exception) {
+                isoDate
+            }
+        }
     }
 }
